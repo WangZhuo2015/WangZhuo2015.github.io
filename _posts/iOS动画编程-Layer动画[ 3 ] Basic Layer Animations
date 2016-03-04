@@ -1,0 +1,71 @@
+#iOS动画编程-Layer动画[ 3 ] Basic Layer Animations
+>期末考试这段时间再没有更新，过几天旅游回来多更几章
+#介绍
+这节中主要介绍一些CABasicAnimations
+顾名思义CABasicAnimation属于Layer动画中最简单的部分
+这里我们会通过将我们之前创建的登录页面的View Animations替换为Layer Animation来讲解
+
+#第一个Layer动画
+这里我们首先实现heading及用户名、密码Label飞入屏幕的动画
+第一步移除`viewWillAppear`中对它们位置的设定
+```swift
+
+//heading.center.x  -= view.bounds.width
+
+```
+在`viewDidAppear`中创建动画对象并添加给Layer
+```swift
+
+//创建CABasicAnimation对象
+let flyRight = CABasicAnimation(keyPath: "position.x")
+//设置CABasicAnimation对象的基本属性
+flyRight.fromValue = -view.bounds.size.width/2
+flyRight.toValue = view.bounds.size.width/2
+flyRight.duration = 0.5
+//给Layer添加动画
+heading.layer.addAnimation(flyRight, forKey: nil)
+
+```
+>这里要注意，如果没有移除`viewWillAppear`中对它们位置的设定(会覆盖xib中原来的坐标),你会发现你的视图在动画结束后消失了，这是由于你看的Animation Object实际上只是一个假象，真正在动的并不是你的控件，它在动画开始时被隐藏(hidden == true)，结束时再显示出来,所以你在动画执行前对位置的设置相当于指定了动画终止后控件的位置
+
+如下方法均可使Animation Object保留在屏幕上，不过这并不是你的控件，也不会响应任何事件
+
+- flyRight.removedOnCompletion = false
+- flyRight.fillMode = kCAFillModeForwards
+
+##接下来我们为另外两个控件添加动画
+由于我们的几个动画之间有延时，我们需要处理这个问题
+```swift
+
+heading.layer.addAnimation(flyRight, forKey: nil)
+flyRight.beginTime = CACurrentMediaTime() + 0.3
+username.layer.addAnimation(flyRight, forKey: nil)
+flyRight.beginTime = CACurrentMediaTime() + 0.1
+password.layer.addAnimation(flyRight, forKey: nil)
+
+```
+#通过Delegate实现在动画结束后设置位置
+设置Delegate
+```swift
+flyRight.delegate = self
+flyRight.setValue("form", forKey: "name")
+flyRight.setValue(username.layer, forKey: "layer")
+flyRight.setValue(password.layer, forKey: "layer")
+```
+写代理方法
+```swift
+override func animationDidStop(anim: CAAnimation, finished flag: Bool) {
+
+let nameValue = valueForKey("name") as? String
+    if let name = nameValue{
+        if name == "form" {
+            let  layer:CALayer = anim.valueForKey("layer")! as! CALayer
+            layer.position.x = self.view.bounds.width/2
+            layer.setValue(layer, forKey: "layer")
+        }
+    }
+
+}
+
+```
+>现在我们已经成功通过Layer Animation实现了之前的动画效果
